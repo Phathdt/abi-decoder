@@ -125,7 +125,8 @@ export function AbiDecoder() {
               <CardHeader>
                 <CardTitle>Decode Method</CardTitle>
                 <CardDescription>
-                  Choose to manually enter data, fetch from transaction hash, or decode by contract address
+                  Choose to manually enter data, fetch from transaction hash, or decode by contract
+                  address
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -149,7 +150,10 @@ export function AbiDecoder() {
                   <TabsContent value="contract" className="mt-6">
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="network-contract" className="text-sm font-medium mb-2 block">
+                        <label
+                          htmlFor="network-contract"
+                          className="text-sm font-medium mb-2 block"
+                        >
                           Network
                         </label>
                         <NetworkSelector
@@ -160,7 +164,10 @@ export function AbiDecoder() {
                       </div>
 
                       <div>
-                        <label htmlFor="contract-address" className="text-sm font-medium mb-2 block">
+                        <label
+                          htmlFor="contract-address"
+                          className="text-sm font-medium mb-2 block"
+                        >
                           Contract Address
                         </label>
                         <Input

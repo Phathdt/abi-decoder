@@ -40,7 +40,9 @@ export function NetworkSelector({ value, onValueChange, disabled }: NetworkSelec
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
             <span className="truncate text-left">{currentNetwork.name}</span>
-            <span className="text-muted-foreground text-sm flex-shrink-0">({currentNetwork.currency})</span>
+            <span className="text-muted-foreground text-sm flex-shrink-0">
+              ({currentNetwork.currency})
+            </span>
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -61,15 +63,14 @@ export function NetworkSelector({ value, onValueChange, disabled }: NetworkSelec
                   }}
                 >
                   <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === id ? 'opacity-100' : 'opacity-0'
-                    )}
+                    className={cn('mr-2 h-4 w-4', value === id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
                     <span className="truncate">{config.name}</span>
-                    <span className="text-muted-foreground text-sm flex-shrink-0">({config.currency})</span>
+                    <span className="text-muted-foreground text-sm flex-shrink-0">
+                      ({config.currency})
+                    </span>
                   </div>
                 </CommandItem>
               ))}
@@ -85,15 +86,14 @@ export function NetworkSelector({ value, onValueChange, disabled }: NetworkSelec
                   }}
                 >
                   <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === id ? 'opacity-100' : 'opacity-0'
-                    )}
+                    className={cn('mr-2 h-4 w-4', value === id ? 'opacity-100' : 'opacity-0')}
                   />
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />
                     <span className="truncate">{config.name}</span>
-                    <span className="text-muted-foreground text-sm flex-shrink-0">({config.currency})</span>
+                    <span className="text-muted-foreground text-sm flex-shrink-0">
+                      ({config.currency})
+                    </span>
                   </div>
                 </CommandItem>
               ))}
