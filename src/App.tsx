@@ -1,5 +1,5 @@
 import { Toaster } from '@/components/ui/sonner';
-import { AbiDecoder } from './components/AbiDecoder'
+import { AbiDecoder } from './components/AbiDecoder';
 
 function App() {
   return (
@@ -7,7 +7,7 @@ function App() {
       <AbiDecoder />
       <Toaster />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
