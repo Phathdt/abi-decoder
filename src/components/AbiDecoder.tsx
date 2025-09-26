@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAbiDecoder, type DecoderMode } from '@/hooks/useAbiDecoder';
 import { NetworkSelector } from '@/components/NetworkSelector';
-import { Copy, Loader2, RotateCcw, Check, Hash, FileText, Zap } from 'lucide-react';
+import { Copy, Loader2, RotateCcw, Check, Hash, FileText, Zap, Code } from 'lucide-react';
 
 export function AbiDecoder() {
   const {
@@ -28,6 +28,12 @@ export function AbiDecoder() {
     transactionDetails,
     contractInfo,
     setTxHash,
+
+    // Contract mode
+    contractAddress,
+    payloadData,
+    setContractAddress,
+    setPayloadData,
 
     // Common
     functionInfo,
@@ -119,61 +125,127 @@ export function AbiDecoder() {
               <CardHeader>
                 <CardTitle>Decode Method</CardTitle>
                 <CardDescription>
-                  Choose to manually enter data or fetch from a transaction hash
+                  Choose to manually enter data, fetch from transaction hash, or decode by contract address
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs value={mode} onValueChange={value => setMode(value as DecoderMode)}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="manual" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Manual Input
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="contract" className="flex items-center gap-2">
+                      <Code className="h-4 w-4" />
+                      Contract + Payload
                     </TabsTrigger>
                     <TabsTrigger value="fetch" className="flex items-center gap-2">
                       <Hash className="h-4 w-4" />
                       Fetch from TxHash
                     </TabsTrigger>
+                    <TabsTrigger value="manual" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Manual Input
+                    </TabsTrigger>
                   </TabsList>
 
-                  {/* Manual Mode */}
-                  <TabsContent value="manual" className="mt-6">
+                  {/* Contract Mode */}
+                  <TabsContent value="contract" className="mt-6">
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="abi" className="text-sm font-medium mb-2 block">
-                          ABI JSON
+                        <label htmlFor="network-contract" className="text-sm font-medium mb-2 block">
+                          Network
                         </label>
-                        <Textarea
-                          id="abi"
-                          placeholder='[{"type":"function","name":"transfer","inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}]}]'
-                          value={abiJson}
-                          onChange={e => setAbiJson(e.target.value)}
-                          className="h-[200px] font-mono text-sm resize-none overflow-y-auto"
+                        <NetworkSelector
+                          value={selectedNetwork}
+                          onValueChange={setSelectedNetwork}
+                          disabled={isLoading}
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="data" className="text-sm font-medium mb-2 block">
-                          Encoded Data
+                        <label htmlFor="contract-address" className="text-sm font-medium mb-2 block">
+                          Contract Address
                         </label>
                         <Input
-                          id="data"
-                          placeholder="0xa9059cbb000000000000000000000000742d35cc..."
-                          value={encodedData}
-                          onChange={e => setEncodedData(e.target.value)}
+                          id="contract-address"
+                          placeholder="0x742d35cc6634C0532925a3b8D91B94E8A72c3b31"
+                          value={contractAddress}
+                          onChange={e => setContractAddress(e.target.value)}
                           className="font-mono text-sm"
                         />
                       </div>
 
+                      <div>
+                        <label htmlFor="payload-data" className="text-sm font-medium mb-2 block">
+                          Payload Data
+                        </label>
+                        <Input
+                          id="payload-data"
+                          placeholder="0xa9059cbb000000000000000000000000742d35cc..."
+                          value={payloadData}
+                          onChange={e => setPayloadData(e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+
+                      {/* Contract Info Display */}
+                      {contractInfo && (
+                        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                          <h4 className="font-medium text-sm flex items-center gap-2">
+                            Contract Info:
+                            {cacheUsed && (
+                              <div className="flex items-center gap-1 text-green-600 text-xs">
+                                <Zap className="h-3 w-3" />
+                                <span>ABI Cached</span>
+                              </div>
+                            )}
+                          </h4>
+                          <div className="text-xs space-y-1">
+                            <div>
+                              <span className="text-muted-foreground">Name:</span>{' '}
+                              {contractInfo.contractName}
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Address:</span>{' '}
+                              <code className="text-xs">{contractInfo.contractAddress}</code>
+                            </div>
+                            {contractInfo.isProxy && contractInfo.implementationAddress && (
+                              <div>
+                                <span className="text-muted-foreground">Implementation:</span>{' '}
+                                <code className="text-xs">
+                                  {contractInfo.implementationAddress}
+                                </code>
+                              </div>
+                            )}
+                            {contractInfo.isProxy && (
+                              <div>
+                                <span className="text-muted-foreground">Proxy Type:</span>{' '}
+                                <span className="text-blue-600">
+                                  {contractInfo.proxyType?.toUpperCase() || 'UNKNOWN'}
+                                </span>
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-muted-foreground">Verified:</span>{' '}
+                              <span
+                                className={
+                                  contractInfo.isVerified ? 'text-green-600' : 'text-red-600'
+                                }
+                              >
+                                {contractInfo.isVerified ? 'Yes' : 'No'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <Button
                           onClick={decode}
-                          disabled={!abiJson || !encodedData || isLoading}
+                          disabled={!contractAddress || !payloadData || isLoading}
                           className="flex-1"
                         >
                           {isLoading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Decoding...
+                              Fetching ABI & Decoding...
                             </>
                           ) : (
                             'Decode'
@@ -297,6 +369,63 @@ export function AbiDecoder() {
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Fetching & Decoding...
+                            </>
+                          ) : (
+                            'Decode'
+                          )}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={reset}
+                          title="Reset all fields"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Manual Mode */}
+                  <TabsContent value="manual" className="mt-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label htmlFor="abi" className="text-sm font-medium mb-2 block">
+                          ABI JSON
+                        </label>
+                        <Textarea
+                          id="abi"
+                          placeholder='[{"type":"function","name":"transfer","inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}]}]'
+                          value={abiJson}
+                          onChange={e => setAbiJson(e.target.value)}
+                          className="h-[200px] font-mono text-sm resize-none overflow-y-auto"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="data" className="text-sm font-medium mb-2 block">
+                          Encoded Data
+                        </label>
+                        <Input
+                          id="data"
+                          placeholder="0xa9059cbb000000000000000000000000742d35cc..."
+                          value={encodedData}
+                          onChange={e => setEncodedData(e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={decode}
+                          disabled={!abiJson || !encodedData || isLoading}
+                          className="flex-1"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Decoding...
                             </>
                           ) : (
                             'Decode'

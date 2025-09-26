@@ -6,7 +6,7 @@ import { abiFetcher, type ContractInfo } from '../lib/abi-fetcher';
 import { defaultNetwork } from '../lib/networks';
 import { toast } from 'sonner';
 
-export type DecoderMode = 'manual' | 'fetch';
+export type DecoderMode = 'manual' | 'fetch' | 'contract';
 
 export interface AbiDecoderState {
   // Mode and network
@@ -19,6 +19,10 @@ export interface AbiDecoderState {
 
   // Fetch mode fields
   txHash: string;
+
+  // Contract mode fields
+  contractAddress: string;
+  payloadData: string;
 
   // Fetched data (populated when using fetch mode)
   transactionDetails: TransactionDetails | null;
@@ -58,6 +62,10 @@ export interface AbiDecoderActions {
   setTxHash: (hash: string) => void;
   fetchTransactionData: () => Promise<void>;
 
+  // Contract mode actions
+  setContractAddress: (address: string) => void;
+  setPayloadData: (data: string) => void;
+
   // Common actions
   decode: () => void;
   reset: () => void;
@@ -65,7 +73,7 @@ export interface AbiDecoderActions {
 
 const initialState: AbiDecoderState = {
   // Mode and network
-  mode: 'manual',
+  mode: 'contract',
   selectedNetwork: defaultNetwork,
 
   // Manual mode fields
@@ -74,6 +82,10 @@ const initialState: AbiDecoderState = {
 
   // Fetch mode fields
   txHash: '',
+
+  // Contract mode fields
+  contractAddress: '',
+  payloadData: '',
 
   // Fetched data
   transactionDetails: null,
@@ -151,6 +163,29 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
       decodedResult: null,
       transactionDetails: null,
       contractInfo: null,
+    }));
+  }, []);
+
+  // Contract mode actions
+  const setContractAddress = useCallback((address: string) => {
+    setState(prev => ({
+      ...prev,
+      contractAddress: address,
+      error: null,
+      functionInfo: null,
+      decodedResult: null,
+      contractInfo: null,
+      cacheUsed: false,
+    }));
+  }, []);
+
+  const setPayloadData = useCallback((data: string) => {
+    setState(prev => ({
+      ...prev,
+      payloadData: data,
+      error: null,
+      functionInfo: null,
+      decodedResult: null,
     }));
   }, []);
 
@@ -260,6 +295,48 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
         return;
       }
 
+      // If in contract mode and we don't have ABI yet, fetch it first
+      if (state.mode === 'contract' && !state.contractInfo) {
+        if (!state.contractAddress) {
+          toast.error('Contract address is required');
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: 'Contract address is required',
+          }));
+          return;
+        }
+
+        if (!state.payloadData) {
+          toast.error('Payload data is required');
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: 'Payload data is required',
+          }));
+          return;
+        }
+
+        // Fetch contract ABI using the contract address
+        const fetchResult = await abiFetcher.fetchContractAbi(
+          state.contractAddress as `0x${string}`,
+          state.selectedNetwork
+        );
+
+        // Update state with fetched data
+        setState(prev => ({
+          ...prev,
+          contractInfo: fetchResult.contractInfo,
+          abiJson: fetchResult.contractInfo.abi,
+          encodedData: state.payloadData,
+          cacheUsed: fetchResult.cacheUsed,
+        }));
+
+        // Now decode with the fetched data
+        await decodeWithData(fetchResult.contractInfo.abi, state.payloadData);
+        return;
+      }
+
       // Decode with current data (manual mode or already fetched data)
       await decodeWithData(state.abiJson, state.encodedData);
     } catch (error) {
@@ -275,6 +352,8 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
   }, [
     state.mode,
     state.txHash,
+    state.contractAddress,
+    state.payloadData,
     state.selectedNetwork,
     state.transactionDetails,
     state.contractInfo,
@@ -356,6 +435,9 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
     // Fetch mode actions
     setTxHash,
     fetchTransactionData,
+    // Contract mode actions
+    setContractAddress,
+    setPayloadData,
     // Common actions
     decode,
     reset,
