@@ -155,10 +155,24 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
 
   // Fetch mode actions
   const setTxHash = useCallback((hash: string) => {
+    let error: string | null = null;
+
+    // Validate transaction hash format and length
+    if (hash.trim() && hash !== '') {
+      // Transaction hash should be exactly 66 characters (0x + 64 hex chars)
+      if (hash.length !== 66) {
+        error = `Invalid transaction hash length. Expected 66 characters (including 0x), got ${hash.length}`;
+      } else if (!hash.startsWith('0x')) {
+        error = 'Transaction hash must start with 0x';
+      } else if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+        error = 'Transaction hash must contain only hexadecimal characters';
+      }
+    }
+
     setState(prev => ({
       ...prev,
       txHash: hash,
-      error: null,
+      error,
       functionInfo: null,
       decodedResult: null,
       transactionDetails: null,
@@ -168,10 +182,24 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
 
   // Contract mode actions
   const setContractAddress = useCallback((address: string) => {
+    let error: string | null = null;
+
+    // Validate contract address format and length
+    if (address.trim() && address !== '') {
+      // Contract address should be exactly 42 characters (0x + 40 hex chars)
+      if (address.length !== 42) {
+        error = `Invalid contract address length. Expected 42 characters (including 0x), got ${address.length}`;
+      } else if (!address.startsWith('0x')) {
+        error = 'Contract address must start with 0x';
+      } else if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+        error = 'Contract address must contain only hexadecimal characters';
+      }
+    }
+
     setState(prev => ({
       ...prev,
       contractAddress: address,
-      error: null,
+      error,
       functionInfo: null,
       decodedResult: null,
       contractInfo: null,
@@ -180,10 +208,25 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
   }, []);
 
   const setPayloadData = useCallback((data: string) => {
+    let error: string | null = null;
+
+    // Validate payload data format and length
+    if (data.trim() && data !== '') {
+      // Remove 0x prefix for length validation
+      const cleanData = data.startsWith('0x') ? data.slice(2) : data;
+
+      // Payload data should have even length (each byte is 2 hex chars)
+      if (cleanData.length % 2 !== 0) {
+        error = 'Payload data must have even length (each byte requires 2 hex characters)';
+      } else if (!/^[0-9a-fA-F]*$/.test(cleanData)) {
+        error = 'Payload data must contain only hexadecimal characters';
+      }
+    }
+
     setState(prev => ({
       ...prev,
       payloadData: data,
-      error: null,
+      error,
       functionInfo: null,
       decodedResult: null,
     }));
