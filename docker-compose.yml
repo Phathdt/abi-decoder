@@ -1,0 +1,32 @@
+services:
+  # Development service
+  abi-decoder-dev:
+    build:
+      context: .
+      target: base
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: pnpm run dev --host
+    environment:
+      - NODE_ENV=development
+    profiles:
+      - dev
+
+  # Production service
+  abi-decoder-prod:
+    build:
+      context: .
+      target: production
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    profiles:
+      - prod
+
+networks:
+  default:
+    driver: bridge
