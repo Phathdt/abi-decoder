@@ -22,10 +22,14 @@ import {
   type ContractModeFormData,
 } from '@/lib/validation';
 import { defaultNetwork } from '@/lib/networks';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export function AbiDecoderForm() {
   const [mode, setMode] = useState<DecoderMode>('contract');
   const [copied, setCopied] = useState<string | null>(null);
+
+  // Persist selected network in localStorage
+  const [persistedNetwork, setPersistedNetwork] = useLocalStorage('selectedNetwork', defaultNetwork);
 
   const {
     transactionDetails,
@@ -46,7 +50,7 @@ export function AbiDecoderForm() {
     resolver: zodResolver(abiDecoderFormSchema),
     mode: 'onChange',
     defaultValues: {
-      selectedNetwork: defaultNetwork,
+      selectedNetwork: persistedNetwork,
       abiJson: '',
       encodedData: '',
       txHash: '',
@@ -57,10 +61,19 @@ export function AbiDecoderForm() {
 
   const { register, handleSubmit, formState: { errors }, reset: resetForm, watch, setValue } = form;
 
-  // Reset form when mode changes
+  const selectedNetwork = watch('selectedNetwork');
+
+  // Sync selectedNetwork changes to localStorage
+  useEffect(() => {
+    if (selectedNetwork) {
+      setPersistedNetwork(selectedNetwork);
+    }
+  }, [selectedNetwork, setPersistedNetwork]);
+
+  // Reset form when mode changes (preserve selected network)
   useEffect(() => {
     resetForm({
-      selectedNetwork: defaultNetwork,
+      selectedNetwork: selectedNetwork || persistedNetwork,
       abiJson: '',
       encodedData: '',
       txHash: '',
@@ -68,9 +81,7 @@ export function AbiDecoderForm() {
       payloadData: '',
     });
     reset();
-  }, [mode, resetForm, reset]);
-
-  const selectedNetwork = watch('selectedNetwork');
+  }, [mode, resetForm, reset, selectedNetwork, persistedNetwork]);
 
   const handleCopy = async (text: string, key: string) => {
     try {
