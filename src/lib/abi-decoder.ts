@@ -71,9 +71,12 @@ export function parseAbi(abiJson: string): ParsedAbi {
  */
 function generateFunctionSignature(func: AbiFunction): string {
   const formatType = (param: AbiParameter): string => {
-    if (param.type === 'tuple' && 'components' in param && param.components) {
+    // Handle tuple and tuple[] types
+    if (param.type.startsWith('tuple') && 'components' in param && param.components) {
       const componentTypes = param.components.map(formatType).join(',');
-      return `(${componentTypes})`;
+      // Check if it's a tuple array (e.g., tuple[], tuple[3])
+      const arraySuffix = param.type.slice(5); // Get everything after 'tuple'
+      return `(${componentTypes})${arraySuffix}`;
     }
     return param.type;
   };

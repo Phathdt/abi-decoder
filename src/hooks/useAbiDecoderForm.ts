@@ -80,16 +80,73 @@ export function useAbiDecoderForm() {
       // Fetch contract ABI
       const fetchResult = await abiFetcher.fetchContractAbi(transaction.to, formData.selectedNetwork);
 
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        transactionDetails: transaction,
-        contractInfo: fetchResult.contractInfo,
-        cacheUsed: fetchResult.cacheUsed,
-        error: null,
-      }));
+      // Decode the transaction data automatically
+      try {
+        const abiToUse = fetchResult.contractInfo.abi;
+        const dataToDecodeHex = transaction.input;
 
-      return { transaction, contractInfo: fetchResult.contractInfo, error: null };
+        // Parse ABI
+        const parseResult = parseAbi(abiToUse);
+        if (!parseResult.success) {
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            transactionDetails: transaction,
+            contractInfo: fetchResult.contractInfo,
+            cacheUsed: fetchResult.cacheUsed,
+            error: parseResult.error || null,
+          }));
+          return { transaction, contractInfo: fetchResult.contractInfo, error: parseResult.error || null };
+        }
+
+        // Decode the data
+        const decodeResult = decodeAbiData(parseResult.abi!, dataToDecodeHex);
+        if (!decodeResult.success) {
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            transactionDetails: transaction,
+            contractInfo: fetchResult.contractInfo,
+            cacheUsed: fetchResult.cacheUsed,
+            error: decodeResult.error || null,
+          }));
+          return { transaction, contractInfo: fetchResult.contractInfo, error: decodeResult.error || null };
+        }
+
+        // Format the results
+        const func = findFunction(parseResult.abi!, decodeResult.functionInfo?.selector?.slice(2));
+        let formattedResult = null;
+        if (func && decodeResult.data) {
+          formattedResult = formatDecodedResult(func.inputs || [], decodeResult.data);
+        }
+
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          transactionDetails: transaction,
+          contractInfo: fetchResult.contractInfo,
+          cacheUsed: fetchResult.cacheUsed,
+          parsedAbi: parseResult.abi!,
+          functionInfo: decodeResult.functionInfo || null,
+          decodedResult: formattedResult,
+          error: null,
+        }));
+
+        toast.success('Transaction fetched and decoded successfully!');
+        return { transaction, contractInfo: fetchResult.contractInfo, error: null };
+      } catch (decodeError) {
+        const errorMessage = decodeError instanceof Error ? decodeError.message : 'Decoding failed';
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          transactionDetails: transaction,
+          contractInfo: fetchResult.contractInfo,
+          cacheUsed: fetchResult.cacheUsed,
+          error: errorMessage,
+        }));
+        toast.error(errorMessage);
+        return { transaction, contractInfo: fetchResult.contractInfo, error: errorMessage };
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transaction data';
       toast.error(errorMessage);

@@ -22,14 +22,16 @@ import {
   type ContractModeFormData,
 } from '@/lib/validation';
 import { defaultNetwork } from '@/lib/networks';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 export function AbiDecoderForm() {
-  const [mode, setMode] = useState<DecoderMode>('contract');
+  const [mode, setMode] = useState<DecoderMode>(() => {
+    const savedMode = localStorage.getItem('decoderMode');
+    if (savedMode && (savedMode === 'contract' || savedMode === 'fetch' || savedMode === 'manual')) {
+      return savedMode as DecoderMode;
+    }
+    return 'contract';
+  });
   const [copied, setCopied] = useState<string | null>(null);
-
-  // Persist selected network in localStorage
-  const [persistedNetwork, setPersistedNetwork] = useLocalStorage('selectedNetwork', defaultNetwork);
 
   const {
     transactionDetails,
@@ -50,7 +52,7 @@ export function AbiDecoderForm() {
     resolver: zodResolver(abiDecoderFormSchema),
     mode: 'onChange',
     defaultValues: {
-      selectedNetwork: persistedNetwork,
+      selectedNetwork: defaultNetwork,
       abiJson: '',
       encodedData: '',
       txHash: '',
@@ -61,19 +63,23 @@ export function AbiDecoderForm() {
 
   const { register, handleSubmit, formState: { errors }, reset: resetForm, watch, setValue } = form;
 
-  const selectedNetwork = watch('selectedNetwork');
-
-  // Sync selectedNetwork changes to localStorage
+  // Load network from localStorage on mount
   useEffect(() => {
-    if (selectedNetwork) {
-      setPersistedNetwork(selectedNetwork);
+    const savedNetwork = localStorage.getItem('selectedNetwork');
+    if (savedNetwork) {
+      try {
+        const network = JSON.parse(savedNetwork);
+        setValue('selectedNetwork', network);
+      } catch (error) {
+        console.error('Failed to parse saved network:', error);
+      }
     }
-  }, [selectedNetwork, setPersistedNetwork]);
+  }, [setValue]);
 
-  // Reset form when mode changes (preserve selected network)
+  // Reset form when mode changes
   useEffect(() => {
     resetForm({
-      selectedNetwork: selectedNetwork || persistedNetwork,
+      selectedNetwork: watch('selectedNetwork'),
       abiJson: '',
       encodedData: '',
       txHash: '',
@@ -81,7 +87,9 @@ export function AbiDecoderForm() {
       payloadData: '',
     });
     reset();
-  }, [mode, resetForm, reset, selectedNetwork, persistedNetwork]);
+  }, [mode, resetForm, reset, watch]);
+
+  const selectedNetwork = watch('selectedNetwork');
 
   const handleCopy = async (text: string, key: string) => {
     try {
@@ -114,16 +122,8 @@ export function AbiDecoderForm() {
     const formData = { ...data, mode };
 
     if (mode === 'fetch') {
-      const fetchResult = await fetchTransactionData(data as FetchModeFormData);
-      if (fetchResult.error) return;
-
-      // Auto-populate ABI and data for decoding
-      if (fetchResult.contractInfo && fetchResult.transaction) {
-        setValue('abiJson', fetchResult.contractInfo.abi);
-        setValue('encodedData', fetchResult.transaction.input);
-        // Auto-decode after fetching
-        setTimeout(() => decodeData(formData, mode), 100);
-      }
+      // fetchTransactionData now handles decoding automatically
+      await fetchTransactionData(data as FetchModeFormData);
     } else if (mode === 'contract') {
       const fetchResult = await fetchContractAbi(data as ContractModeFormData);
       if (fetchResult.error) return;
@@ -203,13 +203,20 @@ export function AbiDecoderForm() {
           <CardContent>
             <NetworkSelector
               value={selectedNetwork}
-              onValueChange={(network) => setValue('selectedNetwork', network)}
+              onValueChange={(network) => {
+                setValue('selectedNetwork', network);
+                localStorage.setItem('selectedNetwork', JSON.stringify(network));
+              }}
             />
           </CardContent>
         </Card>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Tabs value={mode} onValueChange={(value) => setMode(value as DecoderMode)}>
+          <Tabs value={mode} onValueChange={(value) => {
+            const newMode = value as DecoderMode;
+            setMode(newMode);
+            localStorage.setItem('decoderMode', newMode);
+          }}>
             <Card>
               <CardHeader>
                 <CardTitle>Decode Method</CardTitle>

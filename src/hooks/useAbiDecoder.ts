@@ -1,11 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { type Abi, type Hash } from 'viem';
 import { parseAbi, decodeData, formatDecodedResult, findFunction } from '../lib/abi-decoder';
 import { transactionFetcher, type TransactionDetails } from '../lib/transaction-fetcher';
 import { abiFetcher, type ContractInfo } from '../lib/abi-fetcher';
 import { defaultNetwork } from '../lib/networks';
 import { toast } from 'sonner';
-import { useLocalStorage } from './useLocalStorage';
 
 export type DecoderMode = 'manual' | 'fetch' | 'contract';
 
@@ -72,49 +71,39 @@ export interface AbiDecoderActions {
   reset: () => void;
 }
 
+const initialState: AbiDecoderState = {
+  // Mode and network
+  mode: 'contract',
+  selectedNetwork: defaultNetwork,
+
+  // Manual mode fields
+  abiJson: '',
+  encodedData: '',
+
+  // Fetch mode fields
+  txHash: '',
+
+  // Contract mode fields
+  contractAddress: '',
+  payloadData: '',
+
+  // Fetched data
+  transactionDetails: null,
+  contractInfo: null,
+
+  // Common fields
+  parsedAbi: null,
+  functionInfo: null,
+  decodedResult: null,
+  isLoading: false,
+  error: null,
+
+  // Cache tracking
+  cacheUsed: false,
+};
+
 export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
-  // Persist selected network in localStorage
-  const [persistedNetwork, setPersistedNetwork] = useLocalStorage('selectedNetwork', defaultNetwork);
-
-  const initialState: AbiDecoderState = {
-    // Mode and network
-    mode: 'contract',
-    selectedNetwork: persistedNetwork,
-
-    // Manual mode fields
-    abiJson: '',
-    encodedData: '',
-
-    // Fetch mode fields
-    txHash: '',
-
-    // Contract mode fields
-    contractAddress: '',
-    payloadData: '',
-
-    // Fetched data
-    transactionDetails: null,
-    contractInfo: null,
-
-    // Common fields
-    parsedAbi: null,
-    functionInfo: null,
-    decodedResult: null,
-    isLoading: false,
-    error: null,
-
-    // Cache tracking
-    cacheUsed: false,
-  };
-
   const [state, setState] = useState<AbiDecoderState>(initialState);
-
-  // Sync selectedNetwork changes to localStorage
-  useEffect(() => {
-    if (state.selectedNetwork) {
-      setPersistedNetwork(state.selectedNetwork);
-    }
-  }, [state.selectedNetwork, setPersistedNetwork]);
 
   // Mode and network actions
   const setMode = useCallback((mode: DecoderMode) => {
@@ -475,24 +464,8 @@ export function useAbiDecoder(): AbiDecoderState & AbiDecoderActions {
   }, []);
 
   const reset = useCallback(() => {
-    setState({
-      mode: 'contract',
-      selectedNetwork: persistedNetwork,
-      abiJson: '',
-      encodedData: '',
-      txHash: '',
-      contractAddress: '',
-      payloadData: '',
-      transactionDetails: null,
-      contractInfo: null,
-      parsedAbi: null,
-      functionInfo: null,
-      decodedResult: null,
-      isLoading: false,
-      error: null,
-      cacheUsed: false,
-    });
-  }, [persistedNetwork]);
+    setState(initialState);
+  }, []);
 
   return {
     ...state,
