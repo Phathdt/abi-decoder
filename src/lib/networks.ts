@@ -14,6 +14,56 @@ import {
   bscTestnet,
 } from 'viem/chains';
 
+// Custom Optimex chain definitions
+const optimexMainnet: Chain = {
+  id: 8388,
+  name: 'Optimex Mainnet',
+  nativeCurrency: {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [import.meta.env.VITE_OPTIMEX_MAINNET_RPC_URL],
+    },
+    public: {
+      http: [import.meta.env.VITE_OPTIMEX_MAINNET_RPC_URL],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Optimex Explorer',
+      url: 'https://scan.optimex.xyz',
+    },
+  },
+};
+
+const optimexTestnet: Chain = {
+  id: 258386,
+  name: 'Optimex Testnet',
+  nativeCurrency: {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: [import.meta.env.VITE_OPTIMEX_TESTNET_RPC_URL],
+    },
+    public: {
+      http: [import.meta.env.VITE_OPTIMEX_TESTNET_RPC_URL],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Optimex Testnet Explorer',
+      url: 'https://scan-testnet.optimex.xyz',
+    },
+  },
+  testnet: true,
+};
+
 export interface NetworkConfig {
   chain: Chain;
   rpcUrl: string;
@@ -149,6 +199,26 @@ export const networks: Record<string, NetworkConfig> = {
     chainId: 97,
     name: 'BNB Testnet',
     currency: 'tBNB',
+    isTestnet: true,
+  },
+  optimexMainnet: {
+    chain: optimexMainnet,
+    rpcUrl: import.meta.env.VITE_OPTIMEX_MAINNET_RPC_URL,
+    explorerApiUrl: '/api/blockscout/optimex-mainnet',
+    explorerApiKey: import.meta.env.VITE_OPTIMEX_MAINNET_BLOCKSCOUT_API_KEY,
+    chainId: 8388,
+    name: 'Optimex Mainnet',
+    currency: 'ETH',
+    isTestnet: false,
+  },
+  optimexTestnet: {
+    chain: optimexTestnet,
+    rpcUrl: import.meta.env.VITE_OPTIMEX_TESTNET_RPC_URL,
+    explorerApiUrl: '/api/blockscout/optimex-testnet',
+    explorerApiKey: import.meta.env.VITE_OPTIMEX_TESTNET_BLOCKSCOUT_API_KEY,
+    chainId: 258386,
+    name: 'Optimex Testnet',
+    currency: 'ETH',
     isTestnet: true,
   },
 };
