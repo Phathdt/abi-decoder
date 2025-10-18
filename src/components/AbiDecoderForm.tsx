@@ -26,7 +26,10 @@ import { defaultNetwork } from '@/lib/networks';
 export function AbiDecoderForm() {
   const [mode, setMode] = useState<DecoderMode>(() => {
     const savedMode = localStorage.getItem('decoderMode');
-    if (savedMode && (savedMode === 'contract' || savedMode === 'fetch' || savedMode === 'manual')) {
+    if (
+      savedMode &&
+      (savedMode === 'contract' || savedMode === 'fetch' || savedMode === 'manual')
+    ) {
       return savedMode as DecoderMode;
     }
     return 'contract';
@@ -61,7 +64,14 @@ export function AbiDecoderForm() {
     },
   });
 
-  const { register, handleSubmit, formState: { errors }, reset: resetForm, watch, setValue } = form;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset: resetForm,
+    watch,
+    setValue,
+  } = form;
 
   // Load network from localStorage on mount
   useEffect(() => {
@@ -203,7 +213,7 @@ export function AbiDecoderForm() {
           <CardContent>
             <NetworkSelector
               value={selectedNetwork}
-              onValueChange={(network) => {
+              onValueChange={network => {
                 setValue('selectedNetwork', network);
                 localStorage.setItem('selectedNetwork', JSON.stringify(network));
               }}
@@ -212,16 +222,20 @@ export function AbiDecoderForm() {
         </Card>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Tabs value={mode} onValueChange={(value) => {
-            const newMode = value as DecoderMode;
-            setMode(newMode);
-            localStorage.setItem('decoderMode', newMode);
-          }}>
+          <Tabs
+            value={mode}
+            onValueChange={value => {
+              const newMode = value as DecoderMode;
+              setMode(newMode);
+              localStorage.setItem('decoderMode', newMode);
+            }}
+          >
             <Card>
               <CardHeader>
                 <CardTitle>Decode Method</CardTitle>
                 <CardDescription>
-                  Choose to manually enter data, fetch from transaction hash, or decode by contract address
+                  Choose to manually enter data, fetch from transaction hash, or decode by contract
+                  address
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -254,7 +268,9 @@ export function AbiDecoderForm() {
                         {...register('contractAddress')}
                       />
                       {errors.contractAddress && (
-                        <p className="text-sm text-red-600 mt-1">{errors.contractAddress.message?.toString()}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors.contractAddress.message?.toString()}
+                        </p>
                       )}
                     </div>
 
@@ -269,7 +285,9 @@ export function AbiDecoderForm() {
                         {...register('payloadData')}
                       />
                       {errors.payloadData && (
-                        <p className="text-sm text-red-600 mt-1">{errors.payloadData.message?.toString()}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors.payloadData.message?.toString()}
+                        </p>
                       )}
                     </div>
 
@@ -307,7 +325,15 @@ export function AbiDecoderForm() {
                           'Decode'
                         )}
                       </Button>
-                      <Button type="button" variant="outline" size="icon" onClick={() => { resetForm(); reset(); }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          resetForm();
+                          reset();
+                        }}
+                      >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </div>
@@ -328,7 +354,9 @@ export function AbiDecoderForm() {
                         {...register('txHash')}
                       />
                       {errors.txHash && (
-                        <p className="text-sm text-red-600 mt-1">{errors.txHash.message?.toString()}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors.txHash.message?.toString()}
+                        </p>
                       )}
                     </div>
 
@@ -363,7 +391,15 @@ export function AbiDecoderForm() {
                           'Fetch & Decode'
                         )}
                       </Button>
-                      <Button type="button" variant="outline" size="icon" onClick={() => { resetForm(); reset(); }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          resetForm();
+                          reset();
+                        }}
+                      >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </div>
@@ -384,7 +420,9 @@ export function AbiDecoderForm() {
                         {...register('abiJson')}
                       />
                       {errors.abiJson && (
-                        <p className="text-sm text-red-600 mt-1">{errors.abiJson.message?.toString()}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors.abiJson.message?.toString()}
+                        </p>
                       )}
                     </div>
 
@@ -399,7 +437,9 @@ export function AbiDecoderForm() {
                         {...register('encodedData')}
                       />
                       {errors.encodedData && (
-                        <p className="text-sm text-red-600 mt-1">{errors.encodedData.message?.toString()}</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          {errors.encodedData.message?.toString()}
+                        </p>
                       )}
                     </div>
 
@@ -414,7 +454,15 @@ export function AbiDecoderForm() {
                           'Decode'
                         )}
                       </Button>
-                      <Button type="button" variant="outline" size="icon" onClick={() => { resetForm(); reset(); }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          resetForm();
+                          reset();
+                        }}
+                      >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </div>

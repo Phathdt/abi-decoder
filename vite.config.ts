@@ -16,12 +16,12 @@ export default defineConfig({
       '/api/blockscout/optimex-mainnet': {
         target: 'https://scan.optimex.xyz',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/blockscout\/optimex-mainnet/, '/api'),
+        rewrite: path => path.replace(/^\/api\/blockscout\/optimex-mainnet/, '/api'),
       },
       '/api/blockscout/optimex-testnet': {
         target: 'https://scan-testnet.optimex.xyz',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/blockscout\/optimex-testnet/, '/api'),
+        rewrite: path => path.replace(/^\/api\/blockscout\/optimex-testnet/, '/api'),
       },
     },
   },

@@ -1,13 +1,18 @@
 import { useState, useCallback } from 'react';
 import { type Abi, type Hash } from 'viem';
-import { parseAbi, decodeData as decodeAbiData, formatDecodedResult, findFunction } from '../lib/abi-decoder';
+import {
+  parseAbi,
+  decodeData as decodeAbiData,
+  formatDecodedResult,
+  findFunction,
+} from '../lib/abi-decoder';
 import { transactionFetcher, type TransactionDetails } from '../lib/transaction-fetcher';
 import { abiFetcher, type ContractInfo } from '../lib/abi-fetcher';
 import { toast } from 'sonner';
 import type {
   AbiDecoderFormData,
   FetchModeFormData,
-  ContractModeFormData
+  ContractModeFormData,
 } from '../lib/validation';
 
 export type DecoderMode = 'manual' | 'fetch' | 'contract';
@@ -67,7 +72,8 @@ export function useAbiDecoderForm() {
       );
 
       if (!transaction.to) {
-        const error = 'This is a contract creation transaction - no contract address to fetch ABI from';
+        const error =
+          'This is a contract creation transaction - no contract address to fetch ABI from';
         toast.error('Cannot decode contract creation transaction');
         setState(prev => ({
           ...prev,
@@ -78,7 +84,10 @@ export function useAbiDecoderForm() {
       }
 
       // Fetch contract ABI
-      const fetchResult = await abiFetcher.fetchContractAbi(transaction.to, formData.selectedNetwork);
+      const fetchResult = await abiFetcher.fetchContractAbi(
+        transaction.to,
+        formData.selectedNetwork
+      );
 
       // Decode the transaction data automatically
       try {
@@ -96,7 +105,11 @@ export function useAbiDecoderForm() {
             cacheUsed: fetchResult.cacheUsed,
             error: parseResult.error || null,
           }));
-          return { transaction, contractInfo: fetchResult.contractInfo, error: parseResult.error || null };
+          return {
+            transaction,
+            contractInfo: fetchResult.contractInfo,
+            error: parseResult.error || null,
+          };
         }
 
         // Decode the data
@@ -110,7 +123,11 @@ export function useAbiDecoderForm() {
             cacheUsed: fetchResult.cacheUsed,
             error: decodeResult.error || null,
           }));
-          return { transaction, contractInfo: fetchResult.contractInfo, error: decodeResult.error || null };
+          return {
+            transaction,
+            contractInfo: fetchResult.contractInfo,
+            error: decodeResult.error || null,
+          };
         }
 
         // Format the results
@@ -148,7 +165,8 @@ export function useAbiDecoderForm() {
         return { transaction, contractInfo: fetchResult.contractInfo, error: errorMessage };
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transaction data';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to fetch transaction data';
       toast.error(errorMessage);
       setState(prev => ({
         ...prev,
@@ -189,92 +207,94 @@ export function useAbiDecoderForm() {
     }
   }, []);
 
-  const decodeData = useCallback((formData: AbiDecoderFormData, mode: DecoderMode) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+  const decodeData = useCallback(
+    (formData: AbiDecoderFormData, mode: DecoderMode) => {
+      setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      let abiToUse: string;
-      let dataToDecodeHex: string;
+      try {
+        let abiToUse: string;
+        let dataToDecodeHex: string;
 
-      if (mode === 'manual') {
-        abiToUse = formData.abiJson!;
-        dataToDecodeHex = formData.encodedData!;
-      } else if (mode === 'fetch') {
-        if (!state.contractInfo) {
+        if (mode === 'manual') {
+          abiToUse = formData.abiJson!;
+          dataToDecodeHex = formData.encodedData!;
+        } else if (mode === 'fetch') {
+          if (!state.contractInfo) {
+            setState(prev => ({
+              ...prev,
+              isLoading: false,
+              error: 'Transaction data not fetched yet',
+            }));
+            return;
+          }
+          abiToUse = state.contractInfo.abi;
+          dataToDecodeHex = state.transactionDetails?.input || '';
+        } else {
+          // contract mode
+          if (!state.contractInfo) {
+            setState(prev => ({
+              ...prev,
+              isLoading: false,
+              error: 'Contract ABI not fetched yet',
+            }));
+            return;
+          }
+          abiToUse = state.contractInfo.abi;
+          dataToDecodeHex = formData.payloadData!;
+        }
+
+        // Parse ABI
+        const parseResult = parseAbi(abiToUse);
+        if (!parseResult.success) {
           setState(prev => ({
             ...prev,
             isLoading: false,
-            error: 'Transaction data not fetched yet'
+            error: parseResult.error || null,
           }));
           return;
         }
-        abiToUse = state.contractInfo.abi;
-        dataToDecodeHex = state.transactionDetails?.input || '';
-      } else { // contract mode
-        if (!state.contractInfo) {
+
+        // Decode the data
+        const decodeResult = decodeAbiData(parseResult.abi!, dataToDecodeHex);
+        if (!decodeResult.success) {
           setState(prev => ({
             ...prev,
             isLoading: false,
-            error: 'Contract ABI not fetched yet'
+            error: decodeResult.error || null,
           }));
           return;
         }
-        abiToUse = state.contractInfo.abi;
-        dataToDecodeHex = formData.payloadData!;
-      }
 
-      // Parse ABI
-      const parseResult = parseAbi(abiToUse);
-      if (!parseResult.success) {
+        // Format the results
+        const func = findFunction(parseResult.abi!, decodeResult.functionInfo?.selector?.slice(2));
+
+        let formattedResult = null;
+        if (func && decodeResult.data) {
+          formattedResult = formatDecodedResult(func.inputs || [], decodeResult.data);
+        }
+
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error: parseResult.error || null,
+          parsedAbi: parseResult.abi!,
+          functionInfo: decodeResult.functionInfo || null,
+          decodedResult: formattedResult,
+          error: null,
         }));
-        return;
-      }
 
-      // Decode the data
-      const decodeResult = decodeAbiData(parseResult.abi!, dataToDecodeHex);
-      if (!decodeResult.success) {
+        toast.success('Data decoded successfully!');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Decoding failed';
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error: decodeResult.error || null,
+          error: errorMessage,
         }));
-        return;
+        toast.error(errorMessage);
       }
-
-      // Format the results
-      const func = findFunction(parseResult.abi!,
-        decodeResult.functionInfo?.selector?.slice(2)
-      );
-
-      let formattedResult = null;
-      if (func && decodeResult.data) {
-        formattedResult = formatDecodedResult(func.inputs || [], decodeResult.data);
-      }
-
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        parsedAbi: parseResult.abi!,
-        functionInfo: decodeResult.functionInfo || null,
-        decodedResult: formattedResult,
-        error: null,
-      }));
-
-      toast.success('Data decoded successfully!');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Decoding failed';
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
-      }));
-      toast.error(errorMessage);
-    }
-  }, [state.contractInfo, state.transactionDetails]);
+    },
+    [state.contractInfo, state.transactionDetails]
+  );
 
   return {
     ...state,
